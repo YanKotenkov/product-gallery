@@ -1,0 +1,49 @@
+version: '3'
+services:
+    web:
+        image: 'nginx:latest'
+        ports:
+          - '${NGINX_PORT}:80'
+        volumes:
+          - './:/var/www/html'
+          - './docker/nginx/default.conf:/etc/nginx/conf.d/default.conf'
+        working_dir: "/var/www/html"
+        links:
+          - php
+        depends_on:
+          - php
+    php:
+        build: ./docker/php
+        links:
+          - mysql
+          - redis
+        volumes:
+          - './:/var/www/html'
+        environment:
+          - APP_ENV=dev
+          - DB_HOST=mysql
+          - DB_NAME=${DB_NAME}
+          - DB_USER=${DB_USER}
+          - DB_PASS=${DB_PASS}
+          - REDIS_SERVER=redis
+          - REDIS_DATABASE=1
+          - REDIS_CACHE_DSN=redis://redis/2
+        working_dir: "/var/www/html"
+        extra_hosts:
+          - 'dockerhost:${DOCKER_HOST_IP}'
+    mysql:
+      image: mysql:5.7
+      container_name: docker-yii2-gallery-mysql
+      env_file:
+        - .env
+      environment:
+        - DB_ROOT_PASS=${DB_ROOT_PASS}
+        - DB_NAME=${DB_NAME}
+        - DB_USER=${DB_USER}
+        - DB_PASS=${DB_PASS}
+      volumes:
+        - './docker/DATA/mysql:/var/lib/mysql'
+    redis:
+        image: 'redis:latest'
+        volumes:
+          - './docker/DATA/redis:/data'
